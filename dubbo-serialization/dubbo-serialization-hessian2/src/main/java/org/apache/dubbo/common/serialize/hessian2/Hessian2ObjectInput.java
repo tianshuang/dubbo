@@ -95,7 +95,7 @@ public class Hessian2ObjectInput implements ObjectInput, Cleanable {
     @Override
     public <T> T readObject(Class<T> cls) throws IOException,
             ClassNotFoundException {
-        return readObject(cls, cls);
+        return readObject(cls, null);
     }
 
     @Override
