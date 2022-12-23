@@ -39,6 +39,7 @@ import org.apache.dubbo.rpc.model.FrameworkModel;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 
 import static org.apache.dubbo.common.constants.CommonConstants.DUBBO_VERSION_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.INTERFACE_KEY;
@@ -63,6 +64,7 @@ public class DubboCodec extends ExchangeCodec {
     public static final byte RESPONSE_NULL_VALUE_WITH_ATTACHMENTS = 5;
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
     public static final Class<?>[] EMPTY_CLASS_ARRAY = new Class<?>[0];
+    public static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
     private static final ErrorTypeAwareLogger log = LoggerFactory.getErrorTypeAwareLogger(DubboCodec.class);
     private CallbackServiceCodec callbackServiceCodec;
     private FrameworkModel frameworkModel;

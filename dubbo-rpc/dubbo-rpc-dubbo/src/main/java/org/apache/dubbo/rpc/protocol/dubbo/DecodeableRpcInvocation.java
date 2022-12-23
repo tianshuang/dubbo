@@ -43,6 +43,7 @@ import org.apache.dubbo.rpc.support.RpcUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
@@ -139,6 +140,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
             }
             Object[] args = DubboCodec.EMPTY_OBJECT_ARRAY;
             Class<?>[] pts = DubboCodec.EMPTY_CLASS_ARRAY;
+            Type[] genericParameterTypes = DubboCodec.EMPTY_TYPE_ARRAY;
             if (desc.length() > 0) {
 //                if (RpcUtils.isGenericCall(path, getMethodName()) || RpcUtils.isEcho(path, getMethodName())) {
 //                    pts = ReflectUtils.desc2classArray(desc);
@@ -170,6 +172,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
                     MethodDescriptor methodDescriptor = serviceDescriptor.getMethod(getMethodName(), desc);
                     if (methodDescriptor != null) {
                         pts = methodDescriptor.getParameterClasses();
+                        genericParameterTypes = methodDescriptor.getMethod().getGenericParameterTypes();
                         this.setReturnTypes(methodDescriptor.getReturnTypes());
 
                         // switch TCCL
@@ -210,7 +213,7 @@ public class DecodeableRpcInvocation extends RpcInvocation implements Codec, Dec
 
                 args = new Object[pts.length];
                 for (int i = 0; i < args.length; i++) {
-                    args[i] = in.readObject(pts[i]);
+                    args[i] = in.readObject(pts[i], genericParameterTypes[i]);
                 }
             }
             setParameterTypes(pts);

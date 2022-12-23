@@ -39,6 +39,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.dubbo.common.constants.CommonConstants.DUBBO_VERSION_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.PATH_KEY;
@@ -112,5 +114,197 @@ class DecodeableRpcInvocationTest {
         out.flushBuffer();
         outputStream.close();
         return buffer;
+    }
+
+    @Test
+    public void testGenericByteArgument() throws Exception {
+        // Simulate the data called by the client(The called data is stored in invocation and written to the buffer)
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 9103, DemoService.class.getName(), VERSION_KEY, "1.0.0");
+
+        List<Byte> byteList = new ArrayList<>();
+        byteList.add((byte) 1);
+        byteList.add((byte) 2);
+
+        RpcInvocation inv = new RpcInvocation(null, "genericByteArgument", DemoService.class.getName(), "", new Class[]{List.class}, new Object[]{byteList});
+        inv.setObjectAttachment(PATH_KEY, url.getPath());
+        inv.setObjectAttachment(VERSION_KEY, url.getVersion());
+        inv.setObjectAttachment(DUBBO_VERSION_KEY, DUBBO_VERSION);
+        inv.setObjectAttachment("k1", "v1");
+        inv.setObjectAttachment("k2", "v2");
+        inv.setTargetServiceUniqueName(url.getServiceKey());
+        // Write the data of inv to the buffer
+        Byte proto = CodecSupport.getIDByName("hessian2");
+        ChannelBuffer buffer = writeBuffer(url, inv, proto);
+
+        FrameworkModel frameworkModel = new FrameworkModel();
+        ApplicationModel applicationModel = new ApplicationModel(frameworkModel);
+        applicationModel.getDefaultModule().getServiceRepository().registerService(DemoService.class.getName(), DemoService.class);
+        frameworkModel.getServiceRepository().registerProviderUrl(url);
+
+        // Simulate the server to decode
+        Channel channel = new MockChannel();
+        Request request = new Request(1);
+        ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, buffer.readableBytes());
+        DecodeableRpcInvocation decodeableRpcInvocation = new DecodeableRpcInvocation(frameworkModel, channel, request, is, proto);
+        decodeableRpcInvocation.decode();
+
+        // Verify that the decodeableRpcInvocation data decoded by the server is consistent with the invocation data of the client
+        Assertions.assertEquals(request.getVersion(), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(DUBBO_VERSION_KEY), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(VERSION_KEY), inv.getObjectAttachment(VERSION_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(PATH_KEY), inv.getObjectAttachment(PATH_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getMethodName(), inv.getMethodName());
+        Assertions.assertEquals(decodeableRpcInvocation.getParameterTypesDesc(), inv.getParameterTypesDesc());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getParameterTypes(), inv.getParameterTypes());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getArguments(), inv.getArguments());
+        Assertions.assertTrue(CollectionUtils.mapEquals(decodeableRpcInvocation.getObjectAttachments(), inv.getObjectAttachments()));
+        Assertions.assertEquals(decodeableRpcInvocation.getTargetServiceUniqueName(), inv.getTargetServiceUniqueName());
+
+        frameworkModel.destroy();
+    }
+
+    @Test
+    public void testNestedGenericByteArgument() throws Exception {
+        // Simulate the data called by the client(The called data is stored in invocation and written to the buffer)
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 9103, DemoService.class.getName(), VERSION_KEY, "1.0.0");
+
+        List<Byte> byteList = new ArrayList<>();
+        byteList.add((byte) 1);
+        byteList.add((byte) 2);
+        List<List<Byte>> byteListList = new ArrayList<>();
+        byteListList.add(byteList);
+
+        RpcInvocation inv = new RpcInvocation(null, "nestedGenericByteArgument", DemoService.class.getName(), "", new Class<?>[]{List.class}, new Object[]{byteListList});
+        inv.setObjectAttachment(PATH_KEY, url.getPath());
+        inv.setObjectAttachment(VERSION_KEY, url.getVersion());
+        inv.setObjectAttachment(DUBBO_VERSION_KEY, DUBBO_VERSION);
+        inv.setObjectAttachment("k1", "v1");
+        inv.setObjectAttachment("k2", "v2");
+        inv.setTargetServiceUniqueName(url.getServiceKey());
+        // Write the data of inv to the buffer
+        Byte proto = CodecSupport.getIDByName("hessian2");
+        ChannelBuffer buffer = writeBuffer(url, inv, proto);
+
+        FrameworkModel frameworkModel = new FrameworkModel();
+        ApplicationModel applicationModel = new ApplicationModel(frameworkModel);
+        applicationModel.getDefaultModule().getServiceRepository().registerService(DemoService.class.getName(), DemoService.class);
+        frameworkModel.getServiceRepository().registerProviderUrl(url);
+
+        // Simulate the server to decode
+        Channel channel = new MockChannel();
+        Request request = new Request(1);
+        ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, buffer.readableBytes());
+        DecodeableRpcInvocation decodeableRpcInvocation = new DecodeableRpcInvocation(frameworkModel, channel, request, is, proto);
+        decodeableRpcInvocation.decode();
+
+        // Verify that the decodeableRpcInvocation data decoded by the server is consistent with the invocation data of the client
+        Assertions.assertEquals(request.getVersion(), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(DUBBO_VERSION_KEY), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(VERSION_KEY), inv.getObjectAttachment(VERSION_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(PATH_KEY), inv.getObjectAttachment(PATH_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getMethodName(), inv.getMethodName());
+        Assertions.assertEquals(decodeableRpcInvocation.getParameterTypesDesc(), inv.getParameterTypesDesc());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getParameterTypes(), inv.getParameterTypes());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getArguments(), inv.getArguments());
+        Assertions.assertTrue(CollectionUtils.mapEquals(decodeableRpcInvocation.getObjectAttachments(), inv.getObjectAttachments()));
+        Assertions.assertEquals(decodeableRpcInvocation.getTargetServiceUniqueName(), inv.getTargetServiceUniqueName());
+
+        frameworkModel.destroy();
+    }
+
+    @Test
+    public void testGenericShortArgument() throws Exception {
+        // Simulate the data called by the client(The called data is stored in invocation and written to the buffer)
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 9103, DemoService.class.getName(), VERSION_KEY, "1.0.0");
+
+        List<Short> shortList = new ArrayList<>();
+        shortList.add((short) 1);
+        shortList.add((short) 2);
+
+        RpcInvocation inv = new RpcInvocation(null, "genericShortArgument", DemoService.class.getName(), "", new Class[]{List.class}, new Object[]{shortList});
+        inv.setObjectAttachment(PATH_KEY, url.getPath());
+        inv.setObjectAttachment(VERSION_KEY, url.getVersion());
+        inv.setObjectAttachment(DUBBO_VERSION_KEY, DUBBO_VERSION);
+        inv.setObjectAttachment("k1", "v1");
+        inv.setObjectAttachment("k2", "v2");
+        inv.setTargetServiceUniqueName(url.getServiceKey());
+        // Write the data of inv to the buffer
+        Byte proto = CodecSupport.getIDByName("hessian2");
+        ChannelBuffer buffer = writeBuffer(url, inv, proto);
+
+        FrameworkModel frameworkModel = new FrameworkModel();
+        ApplicationModel applicationModel = new ApplicationModel(frameworkModel);
+        applicationModel.getDefaultModule().getServiceRepository().registerService(DemoService.class.getName(), DemoService.class);
+        frameworkModel.getServiceRepository().registerProviderUrl(url);
+
+        // Simulate the server to decode
+        Channel channel = new MockChannel();
+        Request request = new Request(1);
+        ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, buffer.readableBytes());
+        DecodeableRpcInvocation decodeableRpcInvocation = new DecodeableRpcInvocation(frameworkModel, channel, request, is, proto);
+        decodeableRpcInvocation.decode();
+
+        // Verify that the decodeableRpcInvocation data decoded by the server is consistent with the invocation data of the client
+        Assertions.assertEquals(request.getVersion(), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(DUBBO_VERSION_KEY), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(VERSION_KEY), inv.getObjectAttachment(VERSION_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(PATH_KEY), inv.getObjectAttachment(PATH_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getMethodName(), inv.getMethodName());
+        Assertions.assertEquals(decodeableRpcInvocation.getParameterTypesDesc(), inv.getParameterTypesDesc());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getParameterTypes(), inv.getParameterTypes());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getArguments(), inv.getArguments());
+        Assertions.assertTrue(CollectionUtils.mapEquals(decodeableRpcInvocation.getObjectAttachments(), inv.getObjectAttachments()));
+        Assertions.assertEquals(decodeableRpcInvocation.getTargetServiceUniqueName(), inv.getTargetServiceUniqueName());
+
+        frameworkModel.destroy();
+    }
+
+    @Test
+    public void testNestedGenericShortArgument() throws Exception {
+        // Simulate the data called by the client(The called data is stored in invocation and written to the buffer)
+        URL url = new ServiceConfigURL("dubbo", "127.0.0.1", 9103, DemoService.class.getName(), VERSION_KEY, "1.0.0");
+
+        List<Short> shortList = new ArrayList<>();
+        shortList.add((short) 1);
+        shortList.add((short) 2);
+        List<List<Short>> shortListList = new ArrayList<>();
+        shortListList.add(shortList);
+
+        RpcInvocation inv = new RpcInvocation(null, "nestedGenericShortArgument", DemoService.class.getName(), "", new Class<?>[]{List.class}, new Object[]{shortListList});
+        inv.setObjectAttachment(PATH_KEY, url.getPath());
+        inv.setObjectAttachment(VERSION_KEY, url.getVersion());
+        inv.setObjectAttachment(DUBBO_VERSION_KEY, DUBBO_VERSION);
+        inv.setObjectAttachment("k1", "v1");
+        inv.setObjectAttachment("k2", "v2");
+        inv.setTargetServiceUniqueName(url.getServiceKey());
+        // Write the data of inv to the buffer
+        Byte proto = CodecSupport.getIDByName("hessian2");
+        ChannelBuffer buffer = writeBuffer(url, inv, proto);
+
+        FrameworkModel frameworkModel = new FrameworkModel();
+        ApplicationModel applicationModel = new ApplicationModel(frameworkModel);
+        applicationModel.getDefaultModule().getServiceRepository().registerService(DemoService.class.getName(), DemoService.class);
+        frameworkModel.getServiceRepository().registerProviderUrl(url);
+
+        // Simulate the server to decode
+        Channel channel = new MockChannel();
+        Request request = new Request(1);
+        ChannelBufferInputStream is = new ChannelBufferInputStream(buffer, buffer.readableBytes());
+        DecodeableRpcInvocation decodeableRpcInvocation = new DecodeableRpcInvocation(frameworkModel, channel, request, is, proto);
+        decodeableRpcInvocation.decode();
+
+        // Verify that the decodeableRpcInvocation data decoded by the server is consistent with the invocation data of the client
+        Assertions.assertEquals(request.getVersion(), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(DUBBO_VERSION_KEY), DUBBO_VERSION);
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(VERSION_KEY), inv.getObjectAttachment(VERSION_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getObjectAttachment(PATH_KEY), inv.getObjectAttachment(PATH_KEY));
+        Assertions.assertEquals(decodeableRpcInvocation.getMethodName(), inv.getMethodName());
+        Assertions.assertEquals(decodeableRpcInvocation.getParameterTypesDesc(), inv.getParameterTypesDesc());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getParameterTypes(), inv.getParameterTypes());
+        Assertions.assertArrayEquals(decodeableRpcInvocation.getArguments(), inv.getArguments());
+        Assertions.assertTrue(CollectionUtils.mapEquals(decodeableRpcInvocation.getObjectAttachments(), inv.getObjectAttachments()));
+        Assertions.assertEquals(decodeableRpcInvocation.getTargetServiceUniqueName(), inv.getTargetServiceUniqueName());
+
+        frameworkModel.destroy();
     }
 }

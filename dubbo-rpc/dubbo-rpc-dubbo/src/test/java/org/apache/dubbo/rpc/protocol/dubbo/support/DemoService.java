@@ -16,6 +16,7 @@
  */
 package org.apache.dubbo.rpc.protocol.dubbo.support;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,4 +69,12 @@ public interface DemoService {
     String getRemoteApplicationName();
 
     byte[] download(int size);
+
+    void genericByteArgument(List<Byte> byteList);
+
+    void nestedGenericByteArgument(List<List<Byte>> byteListList);
+
+    void genericShortArgument(List<Short> shortList);
+
+    void nestedGenericShortArgument(List<List<Short>> shortListList);
 }

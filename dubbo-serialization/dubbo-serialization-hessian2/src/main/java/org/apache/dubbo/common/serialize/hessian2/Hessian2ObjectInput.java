@@ -93,21 +93,19 @@ public class Hessian2ObjectInput implements ObjectInput, Cleanable {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T readObject(Class<T> cls) throws IOException,
             ClassNotFoundException {
-        if (!mH2i.getSerializerFactory().getClassLoader().equals(Thread.currentThread().getContextClassLoader())) {
-            mH2i.setSerializerFactory(hessian2FactoryInitializer.getSerializerFactory());
-        }
-        return (T) mH2i.readObject(cls);
+        return readObject(cls, cls);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T readObject(Class<T> cls, Type type) throws IOException, ClassNotFoundException {
         if (!mH2i.getSerializerFactory().getClassLoader().equals(Thread.currentThread().getContextClassLoader())) {
             mH2i.setSerializerFactory(hessian2FactoryInitializer.getSerializerFactory());
         }
-        return readObject(cls);
+
+        return (T) mH2i.readObject(cls, type);
     }
 
     public InputStream readInputStream() throws IOException {
